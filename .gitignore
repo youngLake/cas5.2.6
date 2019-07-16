@@ -25,3 +25,4 @@ hs_err_pid*
 #customized
 demo/target
 demo/.idea
+demo/demo.iml
