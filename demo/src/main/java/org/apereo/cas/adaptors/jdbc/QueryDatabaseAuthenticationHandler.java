@@ -19,6 +19,7 @@ import javax.security.auth.login.AccountNotFoundException;
 import javax.security.auth.login.FailedLoginException;
 import javax.sql.DataSource;
 import java.security.GeneralSecurityException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -74,6 +75,8 @@ public class QueryDatabaseAuthenticationHandler extends AbstractJdbcUsernamePass
             final Map<String, Object> dbFields = getJdbcTemplate().queryForMap(this.sql, username);
             dbFields.entrySet().stream().forEach((Map.Entry<String,Object> entry)->{LOGGER.error(">>>>>>>>>>>>>"+entry.getKey()+" : "+entry.getValue());});
             final String dbPassword = (String) dbFields.get(this.fieldPassword);
+            final String perms=String.valueOf(dbFields.get("zyg_permission"));
+            final String roles=String.valueOf(dbFields.get("super_permission"));
             if (StringUtils.isNotBlank(originalPassword) && !matches(originalPassword+"1", dbPassword)
                     || StringUtils.isBlank(originalPassword) && !StringUtils.equals(password, dbPassword)) {
                 throw new FailedLoginException("Password does not match value on record.");
@@ -104,7 +107,9 @@ public class QueryDatabaseAuthenticationHandler extends AbstractJdbcUsernamePass
                 }
 
             });
-
+            ArrayList<String> eduPersonAffiliation=new ArrayList<>();
+            attributes.put("perms",perms);
+            attributes.put("roles",roles);
         } catch (final IncorrectResultSizeDataAccessException e) {
             if (e.getActualSize() == 0) {
                 throw new AccountNotFoundException(username + " not found with SQL query");
@@ -113,6 +118,9 @@ public class QueryDatabaseAuthenticationHandler extends AbstractJdbcUsernamePass
         } catch (final DataAccessException e) {
             throw new PreventedException("SQL exception while executing query for " + username, e);
         }
+        LOGGER.error(">>>>>>>>>>> traverse attributes start ");
+        attributes.forEach((String s,Object o)->{LOGGER.error(">>>>>>>>>>>>>>>>"+s+" : "+o);});
+        LOGGER.error(">>>>>>>>>>> traverse attributes end ");
         return createHandlerResult(credential, this.principalFactory.createPrincipal(username, attributes), null);
     }
 }
